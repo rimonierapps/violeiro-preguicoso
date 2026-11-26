@@ -71,6 +71,56 @@ public class Acordes {
         return out.toString();
     }
 
+    private static final Pattern ACORDE = Pattern.compile(
+            "^\\(?[A-G][#b]?(?:maj|min|dim|aug|sus|add|[mM]|º|°|\\+|-|[0-9]|\\(|\\)|#|b|/(?=[0-9]))*(?:/[A-G][#b]?)?\\)?$");
+    private static final Pattern IGNORAVEL = Pattern.compile("^(\\[.*\\]|\\|+|x\\d+|\\d+x|-+|\\(?x?\\d+\\)?|%|\\.+)$",
+            Pattern.CASE_INSENSITIVE);
+
+    public static boolean ehAcorde(String token) {
+        return ACORDE.matcher(token).matches();
+    }
+
+    /**
+     * Para cifras coladas ou importadas: acha as linhas que só têm acordes
+     * e marca cada acorde (para destacar e mudar o tom).
+     */
+    public static String marcarAcordes(String texto) {
+        StringBuilder out = new StringBuilder(texto.length() + 256);
+        String[] linhas = texto.split("\n", -1);
+        for (int li = 0; li < linhas.length; li++) {
+            String l = linhas[li];
+            if (li > 0) out.append('\n');
+            String[] toks = l.trim().split("\\s+");
+            int acordes = 0;
+            boolean soAcordes = !l.trim().isEmpty();
+            for (String t : toks) {
+                if (t.isEmpty()) continue;
+                if (ehAcorde(t)) acordes++;
+                else if (!IGNORAVEL.matcher(t).matches()) { soAcordes = false; break; }
+            }
+            if (!soAcordes || acordes == 0) { out.append(l); continue; }
+            // marca mantendo as posições
+            Matcher m = Pattern.compile("\\S+").matcher(l);
+            int fim = 0;
+            while (m.find()) {
+                out.append(l, fim, m.start());
+                String t = m.group();
+                if (ehAcorde(t)) {
+                    String pre = "", pos = "";
+                    if (t.startsWith("(")) { pre = "("; t = t.substring(1); }
+                    long abre = t.chars().filter(ch -> ch == '(').count(), fecha = t.chars().filter(ch -> ch == ')').count();
+                    if (t.endsWith(")") && fecha > abre) { pos = ")"; t = t.substring(0, t.length() - 1); }
+                    out.append(pre).append(Cifra.INI).append(t).append(Cifra.FIM).append(pos);
+                } else {
+                    out.append(t);
+                }
+                fim = m.end();
+            }
+            out.append(l.substring(fim));
+        }
+        return out.toString();
+    }
+
     public static String nomeTom(int semitons) {
         if (semitons == 0) return "original";
         return (semitons > 0 ? "+" : "") + semitons;

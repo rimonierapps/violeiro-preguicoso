@@ -15,7 +15,7 @@
     <application
         android:allowBackup="false"
         android:icon="@android:drawable/ic_media_play"
-        android:label="Violeiro Preguiçoso v1"
+        android:label="Violeiro Preguiçoso v2"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
         <activity
@@ -26,10 +26,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Recebe o "Compartilhar" de outros apps -->
-            <intent-filter android:label="Abrir cifra">
+            <!-- Recebe o "Compartilhar" de outros apps: nome da música, link, texto da cifra ou arquivos -->
+            <intent-filter android:label="Violeiro Preguiçoso">
                 <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <!-- "Abrir com" para PDF, HTML e TXT -->
+            <intent-filter android:label="Violeiro Preguiçoso">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="text/html" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>

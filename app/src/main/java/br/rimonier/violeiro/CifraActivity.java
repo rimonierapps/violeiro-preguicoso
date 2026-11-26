@@ -5,7 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.pdf.PdfRenderer;
+import android.os.ParcelFileDescriptor;
+import android.widget.ImageView;
+import java.io.File;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
@@ -30,6 +36,8 @@ import android.widget.TextView;
 public class CifraActivity extends Activity {
     private ScrollView sv;
     private TextView tvCifra, tvCabecalho, tvInfo, tvVel, tvTom;
+    private LinearLayout caixa;      // conteúdo rolado: o texto da cifra ou as páginas do PDF
+    private Button bEstrela;
     private Button bPlay;
     private final Handler h = new Handler(Looper.getMainLooper());
 
@@ -93,7 +101,10 @@ public class CifraActivity extends Activity {
         tvCifra.setTextColor(Ui.TEXTO);
         tvCifra.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 300));
         tvCifra.setText("Carregando…");
-        sv.addView(tvCifra);
+        caixa = new LinearLayout(this);
+        caixa.setOrientation(LinearLayout.VERTICAL);
+        caixa.addView(tvCifra);
+        sv.addView(caixa);
         sv.setOnTouchListener((v, e) -> {
             if (e.getAction() == MotionEvent.ACTION_DOWN || e.getAction() == MotionEvent.ACTION_MOVE) {
                 pausaToqueAte = SystemClock.uptimeMillis() + 2500; // mexeu na mão: segue de onde parou
@@ -124,7 +135,7 @@ public class CifraActivity extends Activity {
                 tvTom,
                 Ui.botao(this, "♯", v -> mudarTom(1)),
                 Ui.botao(this, "🎤", v -> ouvirDeNovo()),
-                Ui.botao(this, "⤒", v -> { pos = 0; sv.scrollTo(0, 0); }),
+                bEstrela = Ui.botao(this, "☆", v -> alternarEstrela()),
                 Ui.botao(this, "🌐", v -> abrirNoSite())));
         raiz.addView(controles);
         setContentView(raiz);
@@ -183,7 +194,7 @@ public class CifraActivity extends Activity {
             try {
                 if (url != null) {
                     c = Repositorio.ler(this, url);
-                    if (c == null) c = Fonte.baixarCifra(url);
+                    if (c == null && !url.startsWith("local:")) c = Fonte.baixarCifra(url);
                 } else {
                     c = Repositorio.acharNoHistorico(this, artista, musica);
                     if (c == null) c = Fonte.buscar(artista, musica);
@@ -218,6 +229,7 @@ public class CifraActivity extends Activity {
         cifra = c;
         tvCabecalho.setText(c.titulo + (c.artista.isEmpty() ? "" : " — " + c.artista));
         render();
+        atualizarEstrela();
         if (sinc != null && (sinc.temDuracao() || sinc.pos0 > 0)) {
             // espera o ajuste de fonte e o layout terminarem antes de medir a altura
             h.postDelayed(() -> { if (sinc != null && sinc.tocando) sincronizar(); }, 400);
@@ -229,6 +241,14 @@ public class CifraActivity extends Activity {
 
     private void render() {
         if (cifra == null) return;
+        // limpa páginas de PDF de uma cifra anterior
+        while (caixa.getChildCount() > 1) caixa.removeViewAt(1);
+        if (cifra.ehPdf()) {
+            tvCifra.setVisibility(View.GONE);
+            mostrarPdf();
+            return;
+        }
+        tvCifra.setVisibility(View.VISIBLE);
         String t = Acordes.transporTexto(cifra.texto, semitons);
         SpannableStringBuilder sb = new SpannableStringBuilder();
         int maxLinha = 0, linha = 0;
@@ -275,10 +295,41 @@ public class CifraActivity extends Activity {
 
     private float fonteAuto = 14;
 
+    /** Desenha cada página do PDF como imagem, na largura da tela. */
+    private void mostrarPdf() {
+        sv.post(() -> {
+            int largura = sv.getWidth();
+            if (largura <= 0) largura = getResources().getDisplayMetrics().widthPixels;
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(new File(cifra.pdf), ParcelFileDescriptor.MODE_READ_ONLY);
+                 PdfRenderer pr = new PdfRenderer(fd)) {
+                for (int i = 0; i < pr.getPageCount() && i < 40; i++) {
+                    try (PdfRenderer.Page pg = pr.openPage(i)) {
+                        int altura = (int) ((long) largura * pg.getHeight() / pg.getWidth());
+                        Bitmap bmp = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888);
+                        bmp.eraseColor(Color.WHITE);
+                        pg.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        ImageView iv = new ImageView(this);
+                        iv.setImageBitmap(bmp);
+                        iv.setAdjustViewBounds(true);
+                        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                        lp.bottomMargin = Ui.dp(this, 6);
+                        caixa.addView(iv, lp);
+                    }
+                }
+                View fim = new View(this);
+                caixa.addView(fim, new LinearLayout.LayoutParams(1, Ui.dp(this, 300)));
+            } catch (Exception e) {
+                tvCifra.setVisibility(View.VISIBLE);
+                tvCifra.setText("Não consegui abrir o PDF: " + e.getMessage());
+            }
+        });
+    }
+
     // ---------- rolagem ----------
 
     private int maxRolagem() {
-        return Math.max(0, tvCifra.getHeight() - sv.getHeight());
+        return Math.max(0, caixa.getHeight() - sv.getHeight());
     }
 
     private void passo() {
@@ -311,7 +362,7 @@ public class CifraActivity extends Activity {
      */
     private void sincronizar() {
         if (sinc == null || cifra == null) { tocar(); return; }
-        int altura = tvCifra.getHeight() - tvCifra.getPaddingBottom();
+        int altura = caixa.getHeight() - (cifra.ehPdf() ? 0 : tvCifra.getPaddingBottom());
         if (altura <= 0) { tvCifra.post(this::sincronizar); return; }
         if (sinc.temDuracao()) {
             vel = altura * 1000f / sinc.dur;
@@ -330,12 +381,14 @@ public class CifraActivity extends Activity {
     }
 
     private void mudarFonte(int d) {
+        if (cifra != null && cifra.ehPdf()) { tvInfo.setText("PDF: aqui só dá para rolar (use dois dedos para zoom no leitor de PDF)"); return; }
         if (fonteSp <= 0) fonteSp = fonteAuto;
         fonteSp = Math.max(8, Math.min(32, fonteSp + d));
         tvCifra.setTextSize(TypedValue.COMPLEX_UNIT_SP, fonteSp);
     }
 
     private void mudarTom(int d) {
+        if (cifra != null && cifra.ehPdf()) { tvInfo.setText("PDF: não dá para mudar o tom. Cole o texto da cifra para isso."); return; }
         semitons = Math.max(-11, Math.min(11, semitons + d));
         float rel = maxRolagem() > 0 ? sv.getScrollY() / (float) maxRolagem() : 0;
         render();
@@ -374,8 +427,24 @@ public class CifraActivity extends Activity {
         });
     }
 
+    private void alternarEstrela() {
+        if (cifra == null) return;
+        if (Repositorio.ehMinha(this, cifra.url)) {
+            if (cifra.local()) { tvInfo.setText("Cifra sua: para apagar, segure o dedo nela na tela inicial."); return; }
+            Repositorio.tirarDasMinhas(this, cifra.url, false);
+        } else {
+            Repositorio.salvarMinha(this, cifra);
+        }
+        atualizarEstrela();
+    }
+
+    private void atualizarEstrela() {
+        bEstrela.setText(cifra != null && Repositorio.ehMinha(this, cifra.url) ? "★" : "☆");
+    }
+
     private void abrirNoSite() {
         if (cifra == null) return;
+        if (cifra.local()) { tvInfo.setText("Essa cifra é sua (importada), não tem página na internet."); return; }
         startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(cifra.url)));
     }
 }

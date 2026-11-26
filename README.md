@@ -17,6 +17,17 @@ App Android de cifras com identificação de música: descobre o que está tocan
 - 🎤 ouve de novo para ressincronizar.
 - Tela sempre acesa; cifras abertas ficam salvas e funcionam sem internet.
 
+## ⭐ Minhas cifras (v2)
+
+Suas cifras têm prioridade: quando a música é identificada, o app procura primeiro nelas.
+
+- **Importar arquivos:** PDF, HTML ou TXT (vários de uma vez). Também dá para usar *Compartilhar* ou *Abrir com* a partir do gerenciador de arquivos.
+- **Colar cifra:** cole o texto; o app reconhece as linhas de acordes para destacar e mudar o tom.
+- **Do navegador:** selecione o texto da cifra e compartilhe com o app, ou compartilhe o link da página.
+- **Lista de músicas:** um arquivo ou texto com uma música por linha (`Artista - Música`, `Música; Artista`…); o app procura e guarda cada uma.
+- **☆ / ★** na tela da cifra guarda ou tira uma cifra das suas. Segure o dedo numa cifra da lista para renomear ou apagar.
+- PDFs aparecem como páginas e rolam normalmente (sem mudança de tom).
+
 ## Configuração
 
 1. **Leitor de notificações:** toque em *Permitir leitura de notificações* na tela inicial.

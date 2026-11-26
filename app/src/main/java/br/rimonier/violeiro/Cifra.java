@@ -12,6 +12,15 @@ public class Cifra {
     public String titulo = "";
     public String artista = "";
     public String texto = "";
+    public String pdf = "";   // caminho do PDF guardado no app (cifras importadas em PDF)
+
+    public boolean local() {
+        return url.startsWith("local:");
+    }
+
+    public boolean ehPdf() {
+        return pdf != null && !pdf.isEmpty();
+    }
 
     public JSONObject paraJson(boolean comTexto) throws JSONException {
         JSONObject j = new JSONObject();
@@ -19,6 +28,7 @@ public class Cifra {
         j.put("titulo", titulo);
         j.put("artista", artista);
         if (comTexto) j.put("texto", texto);
+        if (ehPdf()) j.put("pdf", pdf);
         return j;
     }
 
@@ -28,6 +38,7 @@ public class Cifra {
         c.titulo = j.optString("titulo");
         c.artista = j.optString("artista");
         c.texto = j.optString("texto");
+        c.pdf = j.optString("pdf");
         return c;
     }
 
