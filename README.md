@@ -34,6 +34,24 @@ Suas cifras têm prioridade: quando a música é identificada, o app procura pri
 2. **Token (⚙️):** token do serviço de reconhecimento de áudio usado pelo 🎤.
 3. **📜 Registro:** mostra o que o app captou, para ajustes.
 
+## 💻 Versão web (Linux, Windows, qualquer navegador)
+
+Endereço: <https://rimonierapps.github.io/violeiro-preguicoso/> — no Chrome/Edge dá para *Instalar app*; funciona sem internet depois de aberta uma vez.
+
+- Mesma tela da cifra: rolagem, velocidade, tom, fonte, tela cheia.
+- Teclado: **espaço** rola/pausa · **↑ ↓** velocidade · **+ −** tom · **F** tela cheia · **Esc** volta.
+- Minhas cifras: importar PDF/HTML/TXT (ou arrastar para a página), colar texto, lista de músicas, **💾 Backup / ♻️ Restaurar** para levar as cifras para outro navegador.
+- 🎤 pelo microfone do computador.
+- As cifras ficam guardadas no próprio navegador.
+
+**Buscar cifras na internet pelo navegador** precisa de um intermediário (o navegador bloqueia uma página de ler outro site). Para criar um grátis:
+
+1. Crie uma conta em <https://dash.cloudflare.com> → *Workers & Pages* → *Create* → *Worker*.
+2. Substitua o código pelo de [`web/intermediario-worker.js`](web/intermediario-worker.js) e publique.
+3. Na página do app, em ⚙️, coloque `https://SEU-WORKER.workers.dev/?url=`.
+
+Sem o intermediário, tudo funciona com as cifras importadas e coladas.
+
 ## Compilação
 
-Cada push na `main` compila o APK pelo GitHub Actions, publica em *Releases* e envia pelo Telegram.
+Cada push na `main` compila o APK pelo GitHub Actions, publica em *Releases* e envia pelo Telegram. Mudanças só em `web/` publicam a versão web (GitHub Pages) sem recompilar o APK.

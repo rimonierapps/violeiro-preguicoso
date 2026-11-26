@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Violeiro Preguiçoso</title>
+<meta name="theme-color" content="#121212">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<style>
+  :root { --fundo:#121212; --cartao:#1e1e1e; --texto:#ededed; --apagado:#9e9e9e; --acorde:#ffa726; --destaque:#2e7d32; --borda:#2c2c2c; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--fundo); color:var(--texto); font:16px/1.4 system-ui, sans-serif; }
+  button, input, textarea, select { font:inherit; color:var(--texto); }
+  button { background:#2c2c2c; border:0; border-radius:10px; padding:9px 12px; cursor:pointer; min-height:40px; }
+  button:hover { background:#383838; }
+  button.forte { background:var(--destaque); }
+  input, textarea { background:#1a1a1a; border:1px solid var(--borda); border-radius:8px; padding:8px 10px; width:100%; }
+  textarea { font-family:ui-monospace, monospace; font-size:13px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:22px 0 8px; }
+  .apagado { color:var(--apagado); font-size:14px; }
+  .linha { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+  .linha > * { flex:1 1 auto; }
+  #inicio { max-width:760px; margin:0 auto; padding:16px; }
+  #status { color:var(--acorde); white-space:pre-wrap; margin-top:10px; min-height:1.4em; }
+  .item { padding:11px 6px; border-bottom:1px solid #2a2a2a; cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
+  .item:hover { background:#1a1a1a; }
+  .item small { color:var(--apagado); }
+  .item .acoes button { min-height:30px; padding:4px 8px; font-size:13px; }
+  /* tela da cifra */
+  #leitor { display:none; position:fixed; inset:0; flex-direction:column; background:var(--fundo); }
+  #leitor.aberto { display:flex; }
+  #cab { padding:10px 14px 4px; }
+  #cab b { font-size:19px; }
+  #rolo { flex:1; overflow:auto; padding:8px 12px 0; }
+  #cifra { font-family:ui-monospace, "DejaVu Sans Mono", Consolas, monospace; white-space:pre; margin:0; padding-bottom:50vh; }
+  #cifra b { color:var(--acorde); }
+  #paginas canvas { display:block; width:100%; max-width:1000px; margin:0 auto 8px; background:#fff; }
+  #paginas { padding-bottom:50vh; }
+  #controles { background:var(--cartao); padding:6px; display:flex; gap:5px; flex-wrap:wrap; justify-content:center; }
+  #controles button { min-width:46px; }
+  #controles span { align-self:center; font-size:13px; text-align:center; min-width:56px; }
+  dialog { background:var(--cartao); color:var(--texto); border:1px solid var(--borda); border-radius:12px; width:min(720px, 94vw); }
+  dialog::backdrop { background:#000a; }
+  dialog label { display:block; margin:8px 0 3px; font-size:14px; color:var(--apagado); }
+  .dica { font-size:13px; color:var(--apagado); }
+</style>
+</head>
+<body>
+
+<div id="inicio">
+  <h1>🎸 Violeiro Preguiçoso <small class="apagado">web</small></h1>
+  <div class="apagado">Cifras com identificação de música. Abra a cifra e ela rola sozinha enquanto você toca.</div>
+
+  <h2>Buscar cifra</h2>
+  <input id="edMusica" placeholder="Música (ou Artista - Música)">
+  <div class="linha" style="margin-top:6px">
+    <input id="edArtista" placeholder="Artista (opcional)">
+  </div>
+  <div class="linha">
+    <button class="forte" id="bBuscar">🔎 Buscar</button>
+    <button id="bPesquisar">🌐 Pesquisar na web</button>
+  </div>
+
+  <h2>O que está tocando?</h2>
+  <div class="linha"><button class="forte" id="bOuvir">🎤 Ouvir e abrir a cifra</button></div>
+
+  <h2>⭐ Minhas cifras</h2>
+  <div class="apagado">Ficam guardadas neste navegador e têm prioridade quando a música é identificada.</div>
+  <div class="linha">
+    <button id="bImportar">📥 Importar arquivos (PDF, HTML, TXT)</button>
+    <button id="bColar">📋 Colar cifra</button>
+  </div>
+  <div class="linha">
+    <button id="bListaArq">📝 Lista (arquivo)</button>
+    <button id="bLista">📝 Colar lista</button>
+    <button id="bExportar">💾 Backup</button>
+    <button id="bRestaurar">♻️ Restaurar</button>
+  </div>
+  <input type="file" id="arquivos" multiple accept=".pdf,.html,.htm,.txt,.cho,.chordpro,application/pdf,text/*" hidden>
+  <input type="file" id="arquivoLista" accept=".txt,.csv,text/*" hidden>
+  <input type="file" id="arquivoBackup" accept=".json,application/json" hidden>
+  <div id="listaMinhas"></div>
+
+  <div id="status"></div>
+
+  <h2>Recentes</h2>
+  <div id="listaRecentes"></div>
+
+  <h2>⚙️ Configurações</h2>
+  <label class="apagado">Token do reconhecimento de áudio (para o 🎤)</label>
+  <input id="cfgToken" placeholder="token">
+  <label class="apagado" style="display:block;margin-top:8px">Intermediário para buscar cifras na internet (veja o README)</label>
+  <input id="cfgProxy" placeholder="https://seu-intermediario.workers.dev/?url=">
+  <div class="dica" style="margin-top:6px">Sem intermediário, a busca na internet não funciona no navegador (regra de segurança dos sites); suas cifras importadas e coladas funcionam normalmente.</div>
+</div>
+
+<div id="leitor">
+  <div id="cab"><b id="lTitulo"></b> <span class="apagado" id="lArtista"></span><div class="apagado" id="lInfo"></div></div>
+  <div id="rolo"><pre id="cifra"></pre><div id="paginas"></div></div>
+  <div id="controles">
+    <button id="cFechar" title="Voltar (Esc)">←</button>
+    <button id="cPlay" class="forte" title="Rolar (espaço)">▶</button>
+    <button id="cDevagar" title="Mais devagar (↓)">🐢</button><span id="cVel"></span><button id="cRapido" title="Mais rápido (↑)">🐇</button>
+    <button id="cMenos">A−</button><button id="cMais">A+</button>
+    <button id="cBemol" title="Tom abaixo (−)">♭</button><span id="cTom"></span><button id="cSust" title="Tom acima (+)">♯</button>
+    <button id="cOuvir" title="Ouvir de novo e ressincronizar">🎤</button>
+    <button id="cEstrela" title="Guardar nas minhas cifras">☆</button>
+    <button id="cTela" title="Tela cheia (F)">⛶</button>
+  </div>
+</div>
+
+<dialog id="dColar">
+  <h3 style="margin-top:0">Colar cifra</h3>
+  <label>Música</label><input id="pTitulo">
+  <label>Artista</label><input id="pArtista">
+  <label>Texto da cifra (letra com acordes)</label>
+  <textarea id="pTexto" rows="14" wrap="off"></textarea>
+  <div class="linha"><button class="forte" id="pSalvar">Salvar e abrir</button><button id="pCancelar">Cancelar</button></div>
+</dialog>
+
+<dialog id="dLista">
+  <h3 style="margin-top:0">Lista de músicas</h3>
+  <div class="dica">Uma por linha: <code>Artista - Música</code>, <code>Música; Artista</code>… O app procura e guarda cada uma (precisa do intermediário).</div>
+  <textarea id="lTexto" rows="12"></textarea>
+  <div class="linha"><button class="forte" id="lBuscar">Buscar todas</button><button id="lCancelar">Cancelar</button></div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
