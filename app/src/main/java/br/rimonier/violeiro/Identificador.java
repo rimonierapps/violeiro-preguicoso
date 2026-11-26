@@ -21,8 +21,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Abordagem "do zero": grava alguns segundos pelo microfone e manda para o
- * reconhecimento da AudD (api.audd.io), que devolve artista, título,
+ * Abordagem "do zero": grava alguns segundos pelo microfone e manda para um
+ * serviço de reconhecimento de áudio, que devolve artista, título,
  * o ponto da música em que a gravação caiu (timecode) e a duração.
  */
 public class Identificador {
@@ -85,14 +85,14 @@ public class Identificador {
                             JSONObject am = res.optJSONObject("apple_music");
                             if (am != null) s.dur = am.optLong("durationInMillis");
                         }
-                        Repositorio.registrar(a, "AudD: " + res.optString("artist") + " — " + res.optString("title")
+                        Repositorio.registrar(a, "Reconhecimento: " + res.optString("artist") + " — " + res.optString("title")
                                 + " (em " + res.optString("timecode") + ", duração " + s.dur / 1000 + " s)");
                         r.ok(res.optString("artist"), res.optString("title"), s);
                     });
                 } catch (Exception e) {
                     a.runOnUiThread(() -> {
                         ocupado = false;
-                        Repositorio.registrar(a, "AudD erro: " + e.getMessage());
+                        Repositorio.registrar(a, "Reconhecimento, erro: " + e.getMessage());
                         r.erro("Erro na identificação: " + e.getMessage());
                     });
                 }
@@ -109,9 +109,9 @@ public class Identificador {
         return ms * 1000;
     }
 
-    /** Devolve o objeto "result" da AudD, ou null se não reconheceu. */
+    /** Devolve o objeto "result" do serviço, ou null se não reconheceu. */
     static JSONObject enviar(Context c, File f) throws Exception {
-        String token = Repositorio.prefs(c).getString("audd_token", "").trim();
+        String token = Repositorio.prefs(c).getString("token_reconhecimento", "").trim();
         String b = "----violeiro" + System.nanoTime();
         HttpURLConnection con = (HttpURLConnection) new URL("https://api.audd.io/").openConnection();
         con.setDoOutput(true);
@@ -146,7 +146,7 @@ public class Identificador {
         if ("error".equals(j.optString("status"))) {
             JSONObject e = j.optJSONObject("error");
             String msg = e != null ? e.optString("error_message", resp) : resp;
-            if (token.isEmpty()) msg += " (sem token: crie um grátis em dashboard.audd.io e coloque nas Configurações)";
+            if (token.isEmpty()) msg += " (sem token: veja o README e coloque o token no botão ⚙️)";
             throw new Exception(msg);
         }
         return j.optJSONObject("result");

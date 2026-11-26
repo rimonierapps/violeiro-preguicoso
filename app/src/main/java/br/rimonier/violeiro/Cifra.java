@@ -3,7 +3,7 @@ package br.rimonier.violeiro;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/** Uma cifra baixada do Cifra Club. Os acordes ficam marcados no texto entre \u0001 e \u0002. */
+/** Uma cifra baixada. Os acordes ficam marcados no texto entre \u0001 e \u0002. */
 public class Cifra {
     public static final char INI = '\u0001';
     public static final char FIM = '\u0002';
@@ -33,7 +33,7 @@ public class Cifra {
 
     /** Chave usada para comparar se duas detecções são a mesma música. */
     public static String chave(String artista, String titulo) {
-        return CifraClub.slug(CifraClub.limparArtista(artista == null ? "" : artista)) + "|"
-                + CifraClub.slug(CifraClub.limparTitulo(titulo == null ? "" : titulo));
+        return Fonte.slug(Fonte.limparArtista(artista == null ? "" : artista)) + "|"
+                + Fonte.slug(Fonte.limparTitulo(titulo == null ? "" : titulo));
     }
 }

@@ -26,7 +26,7 @@ public class Repositorio {
     private static File arquivo(Context c, String url) {
         File d = new File(c.getFilesDir(), "cifras");
         d.mkdirs();
-        String nome = CifraClub.slug(url.replace(CifraClub.BASE, ""));
+        String nome = Fonte.slug(url.replace(Fonte.BASE, ""));
         return new File(d, nome + ".json");
     }
 
@@ -84,7 +84,7 @@ public class Repositorio {
             if (k.equals(Cifra.chave(h.artista, h.titulo))) return ler(c, h.url);
         }
         // também pelo endereço provável
-        List<String> cand = CifraClub.candidatos(artista, titulo);
+        List<String> cand = Fonte.candidatos(artista, titulo);
         for (Cifra h : historico(c)) {
             if (cand.contains(h.url)) return ler(c, h.url);
         }

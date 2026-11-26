@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Para conseguir abrir o Shazam e o SoundHound a partir do app (Android 11+) -->
+    <!-- Para conseguir abrir os apps de identificação (Android 11+) -->
     <queries>
         <package android:name="com.shazam.android" />
         <package android:name="com.melodis.midomiMusicIdentifier.freemium" />
@@ -26,7 +26,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Recebe o "Compartilhar" do Shazam, SoundHound, Spotify etc. -->
+            <!-- Recebe o "Compartilhar" de outros apps -->
             <intent-filter android:label="Abrir cifra">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

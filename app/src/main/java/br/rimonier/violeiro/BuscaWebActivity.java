@@ -15,8 +15,8 @@ import android.widget.TextView;
 import java.net.URLEncoder;
 
 /**
- * Quando o endereço direto não existe, mostra a pesquisa (Cifra Club, Google ou DuckDuckGo).
- * Ao tocar num resultado do Cifra Club, a cifra abre no modo de acompanhar.
+ * Quando o endereço direto não existe, mostra uma pesquisa na web.
+ * Ao tocar num resultado do site de cifras, a cifra abre no modo de acompanhar.
  */
 public class BuscaWebActivity extends Activity {
     private WebView web;
@@ -36,9 +36,9 @@ public class BuscaWebActivity extends Activity {
         aviso.setPadding(Ui.dp(this, 10), Ui.dp(this, 8), Ui.dp(this, 10), Ui.dp(this, 4));
         raiz.addView(aviso);
         raiz.addView(Ui.linha(this,
-                Ui.botao(this, "Cifra Club", v -> web.loadUrl(CifraClub.BASE + "?q=" + enc(q))),
-                Ui.botao(this, "Google", v -> web.loadUrl("https://www.google.com/search?q=" + enc("site:cifraclub.com.br " + q))),
-                Ui.botao(this, "DuckDuckGo", v -> web.loadUrl("https://html.duckduckgo.com/html/?q=" + enc("site:cifraclub.com.br " + q)))));
+                Ui.botao(this, "Site de cifras", v -> web.loadUrl(Fonte.BASE + "?q=" + enc(q))),
+                Ui.botao(this, "Buscador 1", v -> web.loadUrl("https://www.google.com/search?q=" + enc("site:" + Fonte.DOMINIO + " " + q))),
+                Ui.botao(this, "Buscador 2", v -> web.loadUrl("https://html.duckduckgo.com/html/?q=" + enc("site:" + Fonte.DOMINIO + " " + q)))));
 
         web = new WebView(this);
         WebSettings s = web.getSettings();
@@ -58,7 +58,7 @@ public class BuscaWebActivity extends Activity {
         raiz.addView(web, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         setContentView(raiz);
 
-        web.loadUrl("https://www.google.com/search?q=" + enc("site:cifraclub.com.br " + q));
+        web.loadUrl("https://www.google.com/search?q=" + enc("site:" + Fonte.DOMINIO + " " + q));
     }
 
     private static String enc(String s) {
@@ -69,7 +69,7 @@ public class BuscaWebActivity extends Activity {
         if (u == null || abriu) return false;
         Uri alvo = u;
         String host = u.getHost() == null ? "" : u.getHost();
-        // links de redirecionamento do Google e do DuckDuckGo
+        // links de redirecionamento dos buscadores
         if (host.contains("google.") && "/url".equals(u.getPath())) {
             String d = u.getQueryParameter("q");
             if (d == null) d = u.getQueryParameter("url");
@@ -77,7 +77,7 @@ public class BuscaWebActivity extends Activity {
         } else if (host.contains("duckduckgo.com") && u.getQueryParameter("uddg") != null) {
             alvo = Uri.parse(u.getQueryParameter("uddg"));
         }
-        String url = CifraClub.urlDeMusica(alvo);
+        String url = Fonte.urlDeMusica(alvo);
         if (url == null) return false;
         abriu = true;
         Intent i = new Intent(this, CifraActivity.class);

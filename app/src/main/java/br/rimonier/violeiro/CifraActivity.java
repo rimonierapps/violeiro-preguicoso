@@ -175,7 +175,7 @@ public class CifraActivity extends Activity {
         pos = 0;
         sv.scrollTo(0, 0);
         tvCabecalho.setText(url != null ? "Abrindo…" : (musica + (artista == null || artista.isEmpty() ? "" : " — " + artista)));
-        tvInfo.setText("Procurando no Cifra Club…");
+        tvInfo.setText("Procurando a cifra…");
         tvCifra.setText("");
         new Thread(() -> {
             Cifra c = null;
@@ -183,10 +183,10 @@ public class CifraActivity extends Activity {
             try {
                 if (url != null) {
                     c = Repositorio.ler(this, url);
-                    if (c == null) c = CifraClub.baixarCifra(url);
+                    if (c == null) c = Fonte.baixarCifra(url);
                 } else {
                     c = Repositorio.acharNoHistorico(this, artista, musica);
-                    if (c == null) c = CifraClub.buscar(artista, musica);
+                    if (c == null) c = Fonte.buscar(artista, musica);
                 }
                 if (c != null) Repositorio.salvar(this, c);
             } catch (Exception e) {
@@ -222,7 +222,7 @@ public class CifraActivity extends Activity {
             // espera o ajuste de fonte e o layout terminarem antes de medir a altura
             h.postDelayed(() -> { if (sinc != null && sinc.tocando) sincronizar(); }, 400);
         } else if (sinc != null && sinc.tocando) {
-            h.postDelayed(this::tocar, 400); // reconhecida pelo Shazam: rola na velocidade padrão
+            h.postDelayed(this::tocar, 400); // reconhecida sem posição: rola na velocidade padrão
         }
         atualizarRotulos();
     }

@@ -20,12 +20,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Busca e leitura de cifras do Cifra Club.
- * O site não tem API pública: o app monta o endereço da música
- * (cifraclub.com.br/artista/musica/) e lê o bloco &lt;pre&gt; da página.
+ * Busca e leitura das cifras no site de origem.
+ * O app monta o endereço da música (site/artista/musica/) e lê o bloco &lt;pre&gt; da página.
  */
-public class CifraClub {
-    public static final String BASE = "https://www.cifraclub.com.br/";
+public class Fonte {
+    static final String DOMINIO = "cifraclub.com.br";
+    public static final String BASE = "https://www." + DOMINIO + "/";
+    static final String SUFIXO_TITULO = "Cifra Club";
     static final String UA = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 "
             + "(KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36";
 
@@ -91,11 +92,11 @@ public class CifraClub {
         return new ArrayList<>(urls);
     }
 
-    /** Se o endereço for de uma página de música do Cifra Club, devolve ele normalizado. */
+    /** Se o endereço for de uma página de música do site, devolve ele normalizado. */
     public static String urlDeMusica(Uri u) {
         if (u == null || u.getHost() == null) return null;
         String host = u.getHost().toLowerCase(Locale.ROOT);
-        if (!host.endsWith("cifraclub.com.br")) return null;
+        if (!host.endsWith(DOMINIO)) return null;
         List<String> seg = u.getPathSegments();
         if (seg.size() < 2 || seg.size() > 3) return null;
         String a = seg.get(0), m = seg.get(1);
@@ -173,14 +174,14 @@ public class CifraClub {
         Cifra c = new Cifra();
         c.url = url;
         c.texto = pre;
-        // og:title = "Tempo Perdido - Legião Urbana - Cifra Club"
+        // og:title = "Música - Artista - <nome do site>"
         Matcher m = Pattern.compile("property=\"og:title\"\\s+content=\"([^\"]*)\"").matcher(html);
         String og = m.find() ? entidades(m.group(1)) : "";
         if (og.isEmpty()) {
             Matcher t = Pattern.compile("(?is)<title>(.*?)</title>").matcher(html);
             if (t.find()) og = entidades(t.group(1)).trim();
         }
-        og = og.replaceAll("\\s*-\\s*Cifra Club\\s*$", "");
+        og = og.replaceAll("\\s*-\\s*" + SUFIXO_TITULO + "\\s*$", "");
         int k = og.lastIndexOf(" - ");
         if (k > 0) {
             c.titulo = og.substring(0, k).trim();

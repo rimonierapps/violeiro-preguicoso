@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
         TextView nome = Ui.texto(this, "🎸 Violeiro Preguiçoso v1", 24, Ui.TEXTO);
         nome.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         raiz.addView(nome);
-        raiz.addView(Ui.texto(this, "Identifica a música e rola a cifra do Cifra Club enquanto você toca.", 14, Ui.APAGADO));
+        raiz.addView(Ui.texto(this, "Identifica a música e rola a cifra enquanto você toca.", 14, Ui.APAGADO));
 
         // --- busca manual ---
         raiz.addView(Ui.titulo(this, "Buscar cifra"));
@@ -77,21 +77,19 @@ public class MainActivity extends Activity {
         raiz.addView(Ui.titulo(this, "O que está tocando?"));
         raiz.addView(Ui.botaoForte(this, "🎤 Ouvir e abrir a cifra", v -> ouvir()), Ui.larguraToda(this));
         raiz.addView(Ui.linha(this,
-                Ui.botao(this, "Abrir Shazam", v -> abrirApp("com.shazam.android", null)),
-                Ui.botao(this, "Abrir SoundHound", v -> abrirApp("com.melodis.midomiMusicIdentifier.freemium",
-                        "com.melodis.midomiMusicIdentifier"))));
-        raiz.addView(Ui.texto(this, "No Shazam/SoundHound, toque em Compartilhar → Violeiro Preguiçoso para abrir a cifra. "
+                Ui.botao(this, "Abrir app identificador", v -> abrirIdentificador())));
+        raiz.addView(Ui.texto(this, "No app identificador, toque em Compartilhar → Violeiro Preguiçoso para abrir a cifra. "
                 + "Com o leitor de notificações ligado, nem precisa compartilhar.", 13, Ui.APAGADO));
 
         // --- modo preguiçoso ---
         raiz.addView(Ui.titulo(this, "Modo preguiçoso"));
-        raiz.addView(chave("Abrir a cifra quando o Shazam/SoundHound reconhecer", "seguir_shazam", true));
-        raiz.addView(chave("Seguir o que toca no celular (Spotify, YouTube Music…) e rolar no tempo da música", "seguir_player", true));
+        raiz.addView(chave("Abrir a cifra quando o app identificador reconhecer", "seguir_identificador", true));
+        raiz.addView(chave("Seguir o que toca no próprio celular e rolar no tempo da música", "seguir_player", true));
         raiz.addView(chave("Avisar com notificação quando o app estiver fechado", "notificar", true));
         bPermissao = Ui.botao(this, "", v -> startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         raiz.addView(bPermissao, Ui.larguraToda(this));
         raiz.addView(Ui.linha(this,
-                Ui.botao(this, "⚙️ Token AudD", v -> configurarToken()),
+                Ui.botao(this, "⚙️ Token", v -> configurarToken()),
                 Ui.botao(this, "📜 Registro", v -> mostrarRegistro())));
 
         status = Ui.texto(this, "", 15, Ui.ACORDE);
@@ -219,31 +217,27 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void abrirApp(String pacote, String alternativo) {
+    /** Abre o primeiro app de identificação de música instalado. */
+    private void abrirIdentificador() {
         PackageManager pm = getPackageManager();
-        Intent i = null;
-        if ("com.shazam.android".equals(pacote)) {
-            // tenta já começar a ouvir; se não der, só abre o app
-            Intent t = new Intent("com.shazam.android.intent.actions.START_TAGGING").setPackage(pacote);
-            if (t.resolveActivity(pm) != null) i = t;
+        for (String pacote : OuvinteService.IDENTIFICADORES_ORDEM) {
+            Intent i = pm.getLaunchIntentForPackage(pacote);
+            if (i != null) { startActivity(i); return; }
         }
-        if (i == null) i = pm.getLaunchIntentForPackage(pacote);
-        if (i == null && alternativo != null) i = pm.getLaunchIntentForPackage(alternativo);
-        if (i == null) { status.setText("Esse app não está instalado."); return; }
-        startActivity(i);
+        status.setText("Nenhum app identificador instalado.");
     }
 
     private void configurarToken() {
-        EditText e = campo("token da AudD");
+        EditText e = campo("token");
         e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-        e.setText(Repositorio.prefs(this).getString("audd_token", ""));
+        e.setText(Repositorio.prefs(this).getString("token_reconhecimento", ""));
         new AlertDialog.Builder(this)
-                .setTitle("Token da AudD")
-                .setMessage("O botão 🎤 usa o reconhecimento da AudD. Sem token funciona poucas vezes por dia; "
-                        + "com token grátis (dashboard.audd.io) dá bem mais.")
+                .setTitle("Token do reconhecimento")
+                .setMessage("O botão 🎤 usa um serviço de reconhecimento de áudio. "
+                        + "Sem token funciona poucas vezes por dia; com token dá bem mais.")
                 .setView(e)
                 .setPositiveButton("Salvar", (d, w) -> Repositorio.prefs(this).edit()
-                        .putString("audd_token", e.getText().toString().trim()).apply())
+                        .putString("token_reconhecimento", e.getText().toString().trim()).apply())
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
@@ -262,7 +256,7 @@ public class MainActivity extends Activity {
                 .show();
     }
 
-    // ---------- "Compartilhar" vindo do Shazam / SoundHound / Spotify ----------
+    // ---------- "Compartilhar" vindo de outros apps ----------
 
     private void tratar(Intent i) {
         if (i == null || !Intent.ACTION_SEND.equals(i.getAction())) return;

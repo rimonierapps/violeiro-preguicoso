@@ -27,18 +27,19 @@ import java.util.Set;
 
 /**
  * Abordagem "integração": lê
- *  1) as notificações de resultado do Shazam / SoundHound (Auto Shazam, Pop-up Shazam etc.);
- *  2) o que está tocando nos players do celular (Spotify, YouTube Music, Deezer…),
+ *  1) as notificações de resultado dos apps de identificação de música;
+ *  2) o que está tocando nos players do celular,
  *     com a posição exata da música — dá para rolar a cifra no tempo certo.
  */
 public class OuvinteService extends NotificationListenerService {
     public static final String ACAO = "br.rimonier.violeiro.MUSICA";
-    static final Set<String> IDENTIFICADORES = new HashSet<>(Arrays.asList(
+    static final String[] IDENTIFICADORES_ORDEM = {
             "com.shazam.android",
             "com.melodis.midomiMusicIdentifier.freemium",
             "com.melodis.midomiMusicIdentifier",
-            "com.google.intelligence.sense" // "Tocando agora" dos Pixel
-    ));
+            "com.google.intelligence.sense"
+    };
+    static final Set<String> IDENTIFICADORES = new HashSet<>(Arrays.asList(IDENTIFICADORES_ORDEM));
 
     /** Quantas telas do app estão visíveis (para decidir entre abrir direto ou notificar). */
     public static int telasVisiveis = 0;
@@ -138,7 +139,7 @@ public class OuvinteService extends NotificationListenerService {
         CharSequence x = ex.getCharSequence(Notification.EXTRA_TEXT);
         boolean fixa = (n.flags & Notification.FLAG_ONGOING_EVENT) != 0;
         Repositorio.registrar(this, "Notificação " + pkg + ": «" + t + "» / «" + x + "»" + (fixa ? " [fixa]" : ""));
-        if (!Repositorio.prefs(this).getBoolean("seguir_shazam", true)) return;
+        if (!Repositorio.prefs(this).getBoolean("seguir_identificador", true)) return;
         if (fixa || t == null || x == null) return;
         String titulo = t.toString().trim(), artista = x.toString().trim();
         String tudo = (titulo + " " + artista).toLowerCase();
@@ -146,7 +147,7 @@ public class OuvinteService extends NotificationListenerService {
                 "procurando", "searching", "nenhum resultado", "no result", "não encontr", "tente novamente"}) {
             if (tudo.contains(status)) return;
         }
-        Sinc sinc = new Sinc(); // sem posição: o Shazam não informa
+        Sinc sinc = new Sinc(); // sem posição: a notificação não informa
         sinc.t0 = System.currentTimeMillis();
         avisar(pkg, artista, titulo, sinc);
     }
