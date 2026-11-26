@@ -1,0 +1,21 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'br.rimonier.violeiro'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'br.rimonier.violeiro'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

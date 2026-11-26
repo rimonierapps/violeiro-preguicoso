@@ -1,0 +1,59 @@
+name: Compilar APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Compilar
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Ler versão
+        id: ver
+        run: echo "v=$(grep -oP "versionName '\\K[^']+" app/build.gradle)" >> "$GITHUB_OUTPUT"
+
+      - name: Renomear APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk VioleiroPreguicoso-v${{ steps.ver.outputs.v }}.apk
+
+      - name: Publicar em Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}-build${{ github.run_number }}
+          name: Violeiro Preguiçoso v${{ steps.ver.outputs.v }} (build ${{ github.run_number }})
+          files: VioleiroPreguicoso-v${{ steps.ver.outputs.v }}.apk
+
+      - name: Enviar APK pelo Telegram
+        if: ${{ env.TG_TOKEN != '' }}
+        run: |
+          curl -sS -f "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" \
+            --form-string "chat_id=${TG_CHAT}" \
+            --form-string "caption=Violeiro Preguiçoso v${{ steps.ver.outputs.v }} (build ${{ github.run_number }})" \
+            -F "document=@VioleiroPreguicoso-v${{ steps.ver.outputs.v }}.apk" > /dev/null
+
+      - name: Avisar falha pelo Telegram
+        if: ${{ failure() && env.TG_TOKEN != '' }}
+        run: |
+          curl -sS "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --form-string "chat_id=${TG_CHAT}" \
+            --form-string "text=❌ Violeiro Preguiçoso: compilação falhou. ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
